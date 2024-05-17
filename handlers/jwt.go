@@ -9,8 +9,8 @@ import (
 )
 
 type UserCredentials struct {
-	Username string `json:username`
-	Password string `json:password`
+	username string `json:username`
+	password string `json:password`
 }
 
 func GenerateToken(w http.ResponseWriter, r *http.Request) {
