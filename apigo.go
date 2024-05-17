@@ -19,6 +19,7 @@ func applyMiddleware(handler http.Handler, middlewares []func(http.Handler) http
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", handlers.Hello)
+	mux.HandleFunc("POST /createJWT", handlers.GenerateToken)
 
 	middlewareStack := []func(http.Handler) http.Handler{
 		middlewares.Auth,
