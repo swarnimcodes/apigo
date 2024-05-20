@@ -1,8 +1,10 @@
 package middlewares
 
 import (
+	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -32,6 +34,12 @@ func JwtAuth(next http.Handler) http.Handler {
 			http.Error(w, "Invalid Token", http.StatusUnauthorized)
 			return
 		}
+
+		expTime := token.Claims.(jwt.MapClaims)["exp"].(float64)
+		expDateTime := time.Unix(int64(expTime), 0)
+		remainingDuration := expDateTime.Sub(time.Now())
+		log.Printf("Token will expire at: %s\n", expDateTime)
+		log.Printf("Remaining time until token expiration (seconds): %f\n", remainingDuration.Seconds())
 		next.ServeHTTP(w, r)
 	})
 }
