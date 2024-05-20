@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 
 	"github.com/swarnimcodes/apigo/handlers"
 	"github.com/swarnimcodes/apigo/middlewares"
@@ -54,26 +57,29 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Couldn't load `.env` file: %s\n", err)
+	}
 	router := NewRouter()
 
 	// global middlewares
+	// TODO: use an array of middlewares to apply globally
 	router.AddGlobalMiddleware(middlewares.Log)
 	router.AddGlobalMiddleware(middlewares.PrintHeaders)
 
 	// handle request with route-specific middlewares
-	router.Handle(
-		"GET /",                          // <request type> <endpoint>
-		http.HandlerFunc(handlers.Hello), // handler function for endpoint
-		middlewares.JwtAuth,              // list of custom middlewares
-	)
-	router.Handle(
-		"POST /createJWT",
-		http.HandlerFunc(handlers.GenerateJWT),
-		middlewares.Auth,
-	)
+	router.Handle("GET /", http.HandlerFunc(handlers.Hello), middlewares.JwtAuth)
+	router.Handle("POST /createJWT", http.HandlerFunc(handlers.GenerateJWT), middlewares.Auth)
+	router.Handle("GET /generateBearerToken", http.HandlerFunc(handlers.GenerateBearerToken), middlewares.Auth)
 
-	var port int = 8080
-	log.Printf("Server started at: %d\n", port)
-	addr := fmt.Sprintf(":%d", port)
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Println("No port specified in `.env`. Using default port `8080`.")
+		port = "8080"
+	}
+	log.Printf("Server started at: %s\n", port)
+	addr := fmt.Sprintf(":%s", port)
 	log.Fatal(http.ListenAndServe(addr, router))
 }

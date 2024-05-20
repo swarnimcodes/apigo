@@ -1,37 +1,50 @@
 package middlewares
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/swarnimcodes/apigo/utils"
 )
 
-var secretKey = []byte("Bearer token123")
+var secretKey = os.Getenv("BEARER_TOKEN")
 
 func JwtAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "Authorization Header Missing", http.StatusUnauthorized)
+			message := "No authorization header sent"
+			statusCode := http.StatusUnauthorized
+			utils.SendErrorResponse(w, message, statusCode)
 			return
 		}
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
+			message := "Invalid Authorization header format"
+			statusCode := http.StatusUnauthorized
+			utils.SendErrorResponse(w, message, statusCode)
 			return
 		}
 
-		tokenString := parts[1]
+		// tokenString := parts[1]
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// TODO: fix secret key
+		secretKey := os.Getenv("BEARER_TOKEN")
+
+		token, err := jwt.Parse(secretKey, func(token *jwt.Token) (interface{}, error) {
 			return secretKey, nil
 		})
 		if err != nil || !token.Valid {
-			http.Error(w, "Invalid Token", http.StatusUnauthorized)
+			fmt.Println(token)
+			message := "Invalid JWT sent"
+			statusCode := http.StatusUnauthorized
+			utils.SendErrorResponse(w, message, statusCode)
 			return
 		}
 
