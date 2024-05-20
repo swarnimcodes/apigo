@@ -18,19 +18,44 @@ func applyMiddleware(handler http.Handler, middlewares []func(http.Handler) http
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", handlers.Hello)
-	mux.HandleFunc("POST /createJWT", handlers.GenerateToken)
 
-	middlewareStack := []func(http.Handler) http.Handler{
-		middlewares.Auth,
+	// middlewares applicable to all
+	globalMiddlewareStack := []func(http.Handler) http.Handler{
+		//middlewares.Auth,
 		middlewares.Log,
 		middlewares.PrintHeaders,
 	}
 
-	handler := applyMiddleware(mux, middlewareStack)
+	// base handler that applies global middlewares
+	baseHandler := applyMiddleware(mux, globalMiddlewareStack)
+
+	// route specific middlewares
+	helloHandler := http.HandlerFunc(handlers.Hello)
+	helloHandlerMiddlewareStack := []func(http.Handler) http.Handler{
+		middlewares.JwtAuth,
+	}
+	helloHandlerWithMiddlewares := applyMiddleware(helloHandler, helloHandlerMiddlewareStack)
+	mux.Handle("GET /", helloHandlerWithMiddlewares)
+
+	// mux.HandleFunc("POST /createJWT", handlers.GenerateJWT)
+
+	createJWTHandler := http.HandlerFunc(handlers.GenerateJWT)
+	createJWTHandlerMiddlewareStack := []func(http.Handler) http.Handler{
+		middlewares.Auth,
+	}
+	createJWTHandlerWithMiddlewares := applyMiddleware(createJWTHandler, createJWTHandlerMiddlewareStack)
+	mux.Handle("POST /createJWT", createJWTHandlerWithMiddlewares)
+
+	// middlewareStack := []func(http.Handler) http.Handler{
+	// 	middlewares.Auth,
+	// 	middlewares.Log,
+	// 	middlewares.PrintHeaders,
+	// }
+
+	// handler := applyMiddleware(mux, middlewareStack)
 
 	var port int = 8080
 	log.Printf("Server started at: %d\n", port)
 	addr := fmt.Sprintf(":%d", port)
-	log.Fatal(http.ListenAndServe(addr, handler))
+	log.Fatal(http.ListenAndServe(addr, baseHandler))
 }

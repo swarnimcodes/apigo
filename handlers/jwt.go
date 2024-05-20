@@ -13,7 +13,7 @@ type UserCredentials struct {
 	Password string `json:password`
 }
 
-func GenerateToken(w http.ResponseWriter, r *http.Request) {
+func GenerateJWT(w http.ResponseWriter, r *http.Request) {
 	var creds UserCredentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
@@ -32,7 +32,7 @@ func GenerateToken(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Sign the token with a secret key
-	secretKey := "your-secret-key"
+	secretKey := r.Header.Get("Authorization")
 
 	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
