@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/swarnimcodes/apigo/handlers"
+	"github.com/swarnimcodes/apigo/handlers/user"
 	"github.com/swarnimcodes/apigo/middlewares"
 )
 
@@ -73,6 +74,10 @@ func main() {
 	router.Handle("GET /", http.HandlerFunc(handlers.Hello), middlewares.JwtAuth)
 	router.Handle("POST /createJWT", http.HandlerFunc(handlers.GenerateJWT), middlewares.Auth)
 	router.Handle("GET /generateBearerToken", http.HandlerFunc(handlers.GenerateBearerToken), middlewares.Auth)
+
+	// User routes
+	router.Handle("POST /createUser", http.HandlerFunc(user.CreateUser), middlewares.Auth)
+	router.Handle("GET /getUser", http.HandlerFunc(user.FetchUser), middlewares.Auth)
 
 	port := os.Getenv("PORT")
 	if port == "" {

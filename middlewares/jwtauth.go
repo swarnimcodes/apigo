@@ -32,13 +32,19 @@ func JwtAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		// tokenString := parts[1]
+		tokenString := parts[1]
 
-		// TODO: fix secret key
+		// // TODO: fix secret key
 		secretKey := os.Getenv("BEARER_TOKEN")
+		if secretKey == "" {
+			message := "Secret key not set"
+			statusCode := http.StatusInternalServerError
+			utils.SendErrorResponse(w, message, statusCode)
+			return
+		}
 
-		token, err := jwt.Parse(secretKey, func(token *jwt.Token) (interface{}, error) {
-			return secretKey, nil
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return []byte(secretKey), nil
 		})
 		if err != nil || !token.Valid {
 			fmt.Println(token)
@@ -48,9 +54,23 @@ func JwtAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		expTime := token.Claims.(jwt.MapClaims)["exp"].(float64)
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok || !token.Valid {
+			message := "Invalid JWT claims"
+			statusCode := http.StatusUnauthorized
+			utils.SendErrorResponse(w, message, statusCode)
+			return
+		}
+
+		expTime, ok := claims["exp"].(float64)
+		if !ok {
+			message := "Invalid JWT claims. Missing `exp`."
+			statusCode := http.StatusUnauthorized
+			utils.SendErrorResponse(w, message, statusCode)
+			return
+		}
 		expDateTime := time.Unix(int64(expTime), 0)
-		remainingDuration := expDateTime.Sub(time.Now())
+		remainingDuration := time.Until(expDateTime)
 		log.Printf("Token will expire at: %s\n", expDateTime)
 		log.Printf("Remaining time until token expiration (seconds): %f\n", remainingDuration.Seconds())
 		next.ServeHTTP(w, r)
